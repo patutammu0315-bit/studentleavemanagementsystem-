@@ -217,10 +217,6 @@ Open `http://127.0.0.1:5000`
 
 | Name | Role |
 |------|------|
-| Pavan Agrawal | Developer |
-| Keshav Kumar Singh | Developer |
-| Rohan Kumar | Developer |
-| Himanshu Kasana | Developer |
-| Vipin | Developer |
+| Rajesh | Developer |
 
-Department of Computer Science (CSE-A), Faculty of Technology, University of Delhi
+Department of Electronics and Communication Enginnering in IFET COLLEGE
