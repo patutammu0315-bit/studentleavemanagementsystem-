@@ -97,6 +97,31 @@ router.get('/reports/export', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+// Delete Student
+router.delete('/students/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const studentId = parseInt(id, 10);
+    // Delete leaves and notifications first
+    await prisma.leave.deleteMany({ where: { student_id: studentId } });
+    await prisma.notification.deleteMany({ where: { student_id: studentId } });
+    const student = await prisma.student.delete({ where: { id: studentId } });
+    res.json({ message: 'Student deleted successfully', student });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete Mentor
+router.delete('/mentors/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const mentorId = parseInt(id, 10);
+    const mentor = await prisma.mentor.delete({ where: { id: mentorId } });
+    res.json({ message: 'Mentor deleted successfully', mentor });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

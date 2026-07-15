@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Users, GraduationCap, FileCheck2, LayoutDashboard, UserPlus, FileSpreadsheet, Download } from 'lucide-react';
+import { LogOut, Users, GraduationCap, FileCheck2, LayoutDashboard, UserPlus, FileSpreadsheet, Download, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminDashboard() {
   const { logout } = useAuth();
   const [stats, setStats] = useState({ totalStudents: 0, totalMentors: 0, pendingLeaves: 0, approvedLeaves: 0 });
   const [activeTab, setActiveTab] = useState('dashboard');
+  
+  const [mentors, setMentors] = useState([]);
+  const [students, setStudents] = useState([]);
 
   // Form states
   const [mentorData, setMentorData] = useState({ name: '', email: '', password: '', phone: '', designation: '', department: '', section: '' });
@@ -22,9 +25,25 @@ export default function AdminDashboard() {
       .catch(err => console.error(err));
   };
 
+  const fetchMentors = () => {
+    axios.get('http://localhost:5000/api/admin/mentors', axiosConfig)
+      .then(res => setMentors(res.data))
+      .catch(err => console.error(err));
+  };
+
+  const fetchStudents = () => {
+    axios.get('http://localhost:5000/api/admin/students', axiosConfig)
+      .then(res => setStudents(res.data))
+      .catch(err => console.error(err));
+  };
+
   useEffect(() => {
     if (activeTab === 'dashboard') {
       fetchDashboardStats();
+    } else if (activeTab === 'mentors') {
+      fetchMentors();
+    } else if (activeTab === 'students') {
+      fetchStudents();
     }
   }, [activeTab]);
 
@@ -34,6 +53,7 @@ export default function AdminDashboard() {
       await axios.post('http://localhost:5000/api/admin/mentors', mentorData, axiosConfig);
       toast.success('Mentor created successfully!');
       setMentorData({ name: '', email: '', password: '', phone: '', designation: '', department: '', section: '' });
+      fetchMentors();
       fetchDashboardStats();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create mentor');
@@ -46,9 +66,32 @@ export default function AdminDashboard() {
       await axios.post('http://localhost:5000/api/admin/students', studentData, axiosConfig);
       toast.success('Student created successfully!');
       setStudentData({ name: '', email: '', student_id: '', password: '', department: '', section: '' });
+      fetchStudents();
       fetchDashboardStats();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create student');
+    }
+  };
+
+  const handleDeleteMentor = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this mentor?')) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/admin/mentors/${id}`, axiosConfig);
+      toast.success('Mentor deleted successfully!');
+      fetchMentors();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete mentor');
+    }
+  };
+
+  const handleDeleteStudent = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this student?')) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/admin/students/${id}`, axiosConfig);
+      toast.success('Student deleted successfully!');
+      fetchStudents();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to delete student');
     }
   };
 
@@ -119,13 +162,13 @@ export default function AdminDashboard() {
         )}
 
         {activeTab === 'mentors' && (
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-border-light max-w-2xl">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-light">
-              <UserPlus className="text-primary w-6 h-6" />
-              <h2 className="text-xl font-bold text-text-primary">Create New Mentor</h2>
-            </div>
-            <form onSubmit={handleCreateMentor} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl">
+            <div className="lg:col-span-1 bg-white p-8 rounded-2xl shadow-sm border border-border-light">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-light">
+                <UserPlus className="text-primary w-6 h-6" />
+                <h2 className="text-xl font-bold text-text-primary">Create New Mentor</h2>
+              </div>
+              <form onSubmit={handleCreateMentor} className="space-y-4">
                 <input type="text" placeholder="Full Name" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={mentorData.name} onChange={e => setMentorData({...mentorData, name: e.target.value})} />
                 <input type="email" placeholder="Email Address" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={mentorData.email} onChange={e => setMentorData({...mentorData, email: e.target.value})} />
                 <input type="password" placeholder="Password" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={mentorData.password} onChange={e => setMentorData({...mentorData, password: e.target.value})} />
@@ -142,22 +185,61 @@ export default function AdminDashboard() {
                   <option value="AI&DS">AI&DS</option>
                 </select>
                 <input type="text" placeholder="Section (e.g. A, B)" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={mentorData.section} onChange={e => setMentorData({...mentorData, section: e.target.value})} />
+                <button type="submit" className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition shadow-lg mt-4 cursor-pointer">
+                  Register Mentor
+                </button>
+              </form>
+            </div>
+
+            <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-border-light overflow-x-auto">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-light">
+                <Users className="text-primary w-6 h-6" />
+                <h2 className="text-xl font-bold text-text-primary">Existing Mentors</h2>
               </div>
-              <button type="submit" className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition shadow-lg mt-4 cursor-pointer">
-                Register Mentor
-              </button>
-            </form>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border-light text-gray-500 text-sm font-semibold">
+                    <th className="py-3 px-2">Name</th>
+                    <th className="py-3 px-2">Email</th>
+                    <th className="py-3 px-2">Dept</th>
+                    <th className="py-3 px-2">Sec</th>
+                    <th className="py-3 px-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mentors.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="py-4 text-center text-gray-400">No mentors registered yet.</td>
+                    </tr>
+                  ) : (
+                    mentors.map(m => (
+                      <tr key={m.id} className="border-b border-border-light text-gray-700 hover:bg-gray-50 transition">
+                        <td className="py-3 px-2 font-medium">{m.name}</td>
+                        <td className="py-3 px-2 text-sm">{m.email}</td>
+                        <td className="py-3 px-2 text-sm">{m.department}</td>
+                        <td className="py-3 px-2 text-sm">{m.section}</td>
+                        <td className="py-3 px-2">
+                          <button onClick={() => handleDeleteMentor(m.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Delete Mentor">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {activeTab === 'students' && (
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-border-light max-w-2xl">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-light">
-              <UserPlus className="text-primary w-6 h-6" />
-              <h2 className="text-xl font-bold text-text-primary">Create New Student</h2>
-            </div>
-            <form onSubmit={handleCreateStudent} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl">
+            <div className="lg:col-span-1 bg-white p-8 rounded-2xl shadow-sm border border-border-light">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-light">
+                <UserPlus className="text-primary w-6 h-6" />
+                <h2 className="text-xl font-bold text-text-primary">Create New Student</h2>
+              </div>
+              <form onSubmit={handleCreateStudent} className="space-y-4">
                 <input type="text" placeholder="Full Name" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={studentData.name} onChange={e => setStudentData({...studentData, name: e.target.value})} />
                 <input type="email" placeholder="Email Address" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={studentData.email} onChange={e => setStudentData({...studentData, email: e.target.value})} />
                 <input type="text" placeholder="Student ID / Roll No" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={studentData.student_id} onChange={e => setStudentData({...studentData, student_id: e.target.value})} />
@@ -173,11 +255,52 @@ export default function AdminDashboard() {
                   <option value="AI&DS">AI&DS</option>
                 </select>
                 <input type="text" placeholder="Section (e.g. A, B)" required className="w-full p-3 border border-border-light rounded-xl focus:ring-2 focus:ring-primary outline-none" value={studentData.section} onChange={e => setStudentData({...studentData, section: e.target.value})} />
+                <button type="submit" className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition shadow-lg mt-4 cursor-pointer">
+                  Register Student
+                </button>
+              </form>
+            </div>
+
+            <div className="lg:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-border-light overflow-x-auto">
+              <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border-light">
+                <GraduationCap className="text-primary w-6 h-6" />
+                <h2 className="text-xl font-bold text-text-primary">Existing Students</h2>
               </div>
-              <button type="submit" className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 rounded-xl transition shadow-lg mt-4 cursor-pointer">
-                Register Student
-              </button>
-            </form>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border-light text-gray-500 text-sm font-semibold">
+                    <th className="py-3 px-2">ID / Roll No</th>
+                    <th className="py-3 px-2">Name</th>
+                    <th className="py-3 px-2">Email</th>
+                    <th className="py-3 px-2">Dept</th>
+                    <th className="py-3 px-2">Sec</th>
+                    <th className="py-3 px-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-4 text-center text-gray-400">No students registered yet.</td>
+                    </tr>
+                  ) : (
+                    students.map(s => (
+                      <tr key={s.id} className="border-b border-border-light text-gray-700 hover:bg-gray-50 transition">
+                        <td className="py-3 px-2 text-sm font-semibold">{s.student_id}</td>
+                        <td className="py-3 px-2 font-medium">{s.name}</td>
+                        <td className="py-3 px-2 text-sm">{s.email}</td>
+                        <td className="py-3 px-2 text-sm">{s.department}</td>
+                        <td className="py-3 px-2 text-sm">{s.section}</td>
+                        <td className="py-3 px-2">
+                          <button onClick={() => handleDeleteStudent(s.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Delete Student">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
