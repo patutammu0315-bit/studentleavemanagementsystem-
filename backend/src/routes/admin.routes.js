@@ -97,6 +97,8 @@ router.get('/reports/export', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
 // Delete Student
 router.delete('/students/:id', async (req, res) => {
   const { id } = req.params;
